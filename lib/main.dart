@@ -23,16 +23,14 @@ class ChatScreen extends StatefulWidget {
   }
 }
 
-class ChatScreenState extends State<ChatScreen> {
+class ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final _messages = <ChatMessage>[];
   final _textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("AppBar: FriendlyChat")
-      ),
+      appBar: AppBar(title: Text("AppBar: FriendlyChat")),
       body: Column(
         children: <Widget>[
           Flexible(
@@ -45,21 +43,25 @@ class ChatScreenState extends State<ChatScreen> {
           ),
           Divider(height: 1),
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor
-            ),
-            child: _buildTextComposer()
-          ),
+              decoration: BoxDecoration(color: Theme.of(context).cardColor),
+              child: _buildTextComposer()),
         ],
       ),
     );
   }
 
+  @override
+  void dispose() {
+    for (ChatMessage message in _messages) {
+      message.animationController.dispose();
+    }
+
+    super.dispose();
+  }
+
   Widget _buildTextComposer() {
     return IconTheme(
-      data: IconThemeData(
-        color: Theme.of(context).accentColor
-      ),
+      data: IconThemeData(color: Theme.of(context).accentColor),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Row(
@@ -68,9 +70,8 @@ class ChatScreenState extends State<ChatScreen> {
               child: TextField(
                 controller: _textController,
                 onSubmitted: _handleSubmitted,
-                decoration: InputDecoration.collapsed(
-                    hintText: "Send a message"
-                ),
+                decoration:
+                    InputDecoration.collapsed(hintText: "Send a message"),
               ),
             ),
             Container(
@@ -89,39 +90,55 @@ class ChatScreenState extends State<ChatScreen> {
   void _handleSubmitted(String text) {
     _textController.clear();
 
-    ChatMessage message = ChatMessage(text: text);
+    ChatMessage message = ChatMessage(
+      text: text,
+      animationController: AnimationController(
+        duration: Duration(milliseconds: 300),
+        vsync: this,
+      ),
+    );
+
     setState(() {
       _messages.insert(0, message);
     });
+
+    message.animationController.forward();
   }
 }
 
 class ChatMessage extends StatelessWidget {
-  ChatMessage({this.text});
+  ChatMessage({this.text, this.animationController});
   final String text;
+  final AnimationController animationController;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(child: Text(_name[0])),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(_name, style: Theme.of(context).textTheme.subhead),
-              Container(
-                margin: const EdgeInsets.only(top: 5),
-                child: Text(text),
-              ),
-            ],
-          ),
-        ],
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(
+          parent: animationController, curve: Curves.easeOut
+      ),
+      axisAlignment: 0,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(child: Text(_name[0])),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(_name, style: Theme.of(context).textTheme.subhead),
+                Container(
+                  margin: const EdgeInsets.only(top: 5),
+                  child: Text(text),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
